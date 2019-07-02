@@ -8,8 +8,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // ******************************************************************************************
-// 
-// 
+//
+//
 // \file OpenSeaChest_Basics.c command line that performs various basic functions on a device.
 
 //////////////////////
@@ -76,11 +76,10 @@ int32_t main(int argc, char *argv[])
     DEVICE_INFO_VAR
     SAT_INFO_VAR
     DATA_ERASE_VAR
-    PARTIAL_DATA_ERASE_VAR
     LICENSE_VAR
     ECHO_COMMAND_LINE_VAR
     SCAN_FLAG_VAR
-	AGRESSIVE_SCAN_FLAG_VAR
+    AGRESSIVE_SCAN_FLAG_VAR
     SHOW_BANNER_VAR
     SHOW_HELP_VAR
     TEST_UNIT_READY_VAR
@@ -110,7 +109,7 @@ int32_t main(int argc, char *argv[])
     RESTORE_MAX_LBA_VAR
     SET_PHY_SAS_PHY_IDENTIFIER_VAR
     SET_PHY_SPEED_VARS
-	SET_READY_LED_VARS
+    SET_READY_LED_VARS
     READ_LOOK_AHEAD_VARS
     WRITE_CACHE_VARS
     TRIM_UNMAP_VARS
@@ -141,7 +140,7 @@ int32_t main(int argc, char *argv[])
         SAT_INFO_LONG_OPT,
         USB_CHILD_INFO_LONG_OPT,
         SCAN_LONG_OPT,
-		AGRESSIVE_SCAN_LONG_OPT,
+        AGRESSIVE_SCAN_LONG_OPT,
         SCAN_FLAGS_LONG_OPT,
         VERSION_LONG_OPT,
         VERBOSE_LONG_OPT,
@@ -174,7 +173,7 @@ int32_t main(int argc, char *argv[])
         RESTORE_MAX_LBA_LONG_OPT,
         SET_PHY_SPEED_LONG_OPT,
         SET_PHY_SAS_PHY_LONG_OPT,
-		SET_READY_LED_LONG_OPTS,
+        SET_READY_LED_LONG_OPTS,
         READ_LOOK_AHEAD_LONG_OPT,
         WRITE_CACHE_LONG_OPT,
         OVERWRITE_LONG_OPTS,
@@ -223,10 +222,6 @@ int32_t main(int argc, char *argv[])
                 if (strlen(optarg) == strlen(DATA_ERASE_ACCEPT_STRING) && strncmp(optarg, DATA_ERASE_ACCEPT_STRING, strlen(DATA_ERASE_ACCEPT_STRING)) == 0)
                 {
                     DATA_ERASE_FLAG = true;
-                }
-                else if (strlen(optarg) == strlen(PARTIAL_DATA_ERASE_ACCEPT_STRING) && strncmp(optarg, PARTIAL_DATA_ERASE_ACCEPT_STRING, strlen(PARTIAL_DATA_ERASE_ACCEPT_STRING)) == 0)
-                {
-                    PARTIAL_DATA_ERASE_FLAG = true;
                 }
                 else
                 {
@@ -345,8 +340,8 @@ int32_t main(int argc, char *argv[])
                 SET_PHY_SAS_PHY_IDENTIFIER = (uint8_t)atoi(optarg);
             }
             else if ((strncmp(longopts[optionIndex].name, SET_READY_LED_LONG_OPT_STRING, M_Min(strlen(longopts[optionIndex].name), strlen(SET_READY_LED_LONG_OPT_STRING))) == 0) ||
-				(strncmp(longopts[optionIndex].name, SET_PIN_11_LONG_OPT_STRING, M_Min(strlen(longopts[optionIndex].name), strlen(SET_PIN_11_LONG_OPT_STRING))) == 0)
-				)
+                (strncmp(longopts[optionIndex].name, SET_PIN_11_LONG_OPT_STRING, M_Min(strlen(longopts[optionIndex].name), strlen(SET_PIN_11_LONG_OPT_STRING))) == 0)
+                )
             {
                 if (strcmp(optarg, "default") == 0)
                 {
@@ -541,9 +536,9 @@ int32_t main(int argc, char *argv[])
         case SCAN_SHORT_OPT: //scan
             SCAN_FLAG = true;
             break;
-		case AGRESSIVE_SCAN_SHORT_OPT:
-			AGRESSIVE_SCAN_FLAG = true;
-			break;
+        case AGRESSIVE_SCAN_SHORT_OPT:
+            AGRESSIVE_SCAN_FLAG = true;
+            break;
         case VERSION_SHORT_OPT:
             SHOW_BANNER_FLAG = true;
             break;
@@ -614,13 +609,13 @@ int32_t main(int argc, char *argv[])
         print_EULA_To_Screen(false, false);
     }
 
-	if (SCAN_FLAG || AGRESSIVE_SCAN_FLAG)
+    if (SCAN_FLAG || AGRESSIVE_SCAN_FLAG)
     {
         unsigned int scanControl = DEFAULT_SCAN;
-		if(AGRESSIVE_SCAN_FLAG)
-		{
-			scanControl |= AGRESSIVE_SCAN;
-		}
+        if(AGRESSIVE_SCAN_FLAG)
+        {
+            scanControl |= AGRESSIVE_SCAN;
+        }
         #if defined (__linux__)
         if (scanSD)
         {
@@ -683,16 +678,16 @@ int32_t main(int argc, char *argv[])
             scanControl |= ALLOW_DUPLICATE_DEVICE;
         }
 #endif
-		if (ONLY_SEAGATE_FLAG)
-		{
-			scanControl |= SCAN_SEAGATE_ONLY;
-		}
-        scan_And_Print_Devs(scanControl, NULL);
+        if (ONLY_SEAGATE_FLAG)
+        {
+            scanControl |= SCAN_SEAGATE_ONLY;
+        }
+        scan_And_Print_Devs(scanControl, NULL, toolVerbosity);
     }
     // Add to this if list anything that is suppose to be independent.
     // e.g. you can't say enumerate & then pull logs in the same command line.
     // SIMPLE IS BEAUTIFUL
-	if (SCAN_FLAG || AGRESSIVE_SCAN_FLAG || SHOW_BANNER_FLAG || LICENSE_FLAG || SHOW_HELP_FLAG)
+    if (SCAN_FLAG || AGRESSIVE_SCAN_FLAG || SHOW_BANNER_FLAG || LICENSE_FLAG || SHOW_HELP_FLAG)
     {
         free_Handle_List(&HANDLE_LIST, DEVICE_LIST_COUNT);
         exit(UTIL_EXIT_NO_ERROR);
@@ -731,7 +726,7 @@ int32_t main(int argc, char *argv[])
         }
         exit(UTIL_EXIT_INVALID_DEVICE_HANDLE);
     }
-    
+
     if ((FORCE_SCSI_FLAG && FORCE_ATA_FLAG)
         || (FORCE_ATA_PIO_FLAG && FORCE_ATA_DMA_FLAG && FORCE_ATA_UDMA_FLAG)
         || (FORCE_ATA_PIO_FLAG && FORCE_ATA_DMA_FLAG)
@@ -895,9 +890,9 @@ int32_t main(int argc, char *argv[])
             ret = get_Device(HANDLE_LIST[handleIter], &deviceList[handleIter]);
 #if !defined(_WIN32)
 #if !defined(VMK_CROSS_COMP)
-            if ((deviceList[handleIter].os_info.fd < 0) || 
+            if ((deviceList[handleIter].os_info.fd < 0) ||
 #else
-            if (((deviceList[handleIter].os_info.fd < 0) && 
+            if (((deviceList[handleIter].os_info.fd < 0) &&
                  (deviceList[handleIter].os_info.nvmeFd == NULL)) ||
 #endif
             (ret == FAILURE || ret == PERMISSION_DENIED))
@@ -939,14 +934,14 @@ int32_t main(int argc, char *argv[])
         //check for model number match
         if (MODEL_MATCH_FLAG)
         {
-			if (strstr(deviceList[deviceIter].drive_info.product_identification, MODEL_STRING_FLAG) == NULL)
-			{
-				if (VERBOSITY_QUIET < toolVerbosity)
-				{
-					printf("%s - This drive (%s) does not match the input model number: %s\n", deviceList[deviceIter].os_info.name, deviceList[deviceIter].drive_info.product_identification, MODEL_STRING_FLAG);
-				}
-				continue;
-			}
+            if (strstr(deviceList[deviceIter].drive_info.product_identification, MODEL_STRING_FLAG) == NULL)
+            {
+                if (VERBOSITY_QUIET < toolVerbosity)
+                {
+                    printf("%s - This drive (%s) does not match the input model number: %s\n", deviceList[deviceIter].os_info.name, deviceList[deviceIter].drive_info.product_identification, MODEL_STRING_FLAG);
+                }
+                continue;
+            }
         }
         //check for fw match
         if (FW_MATCH_FLAG)
@@ -964,14 +959,14 @@ int32_t main(int argc, char *argv[])
         //check for child model number match
         if (CHILD_MODEL_MATCH_FLAG)
         {
-			if (strlen(deviceList[deviceIter].drive_info.bridge_info.childDriveMN) == 0 || strstr(deviceList[deviceIter].drive_info.bridge_info.childDriveMN, CHILD_MODEL_STRING_FLAG) == NULL)
-			{
-				if (VERBOSITY_QUIET < toolVerbosity)
-				{
-					printf("%s - This drive (%s) does not match the input child model number: %s\n", deviceList[deviceIter].os_info.name, deviceList[deviceIter].drive_info.bridge_info.childDriveMN, CHILD_MODEL_STRING_FLAG);
-				}
-				continue;
-			}
+            if (strlen(deviceList[deviceIter].drive_info.bridge_info.childDriveMN) == 0 || strstr(deviceList[deviceIter].drive_info.bridge_info.childDriveMN, CHILD_MODEL_STRING_FLAG) == NULL)
+            {
+                if (VERBOSITY_QUIET < toolVerbosity)
+                {
+                    printf("%s - This drive (%s) does not match the input child model number: %s\n", deviceList[deviceIter].os_info.name, deviceList[deviceIter].drive_info.bridge_info.childDriveMN, CHILD_MODEL_STRING_FLAG);
+                }
+                continue;
+            }
         }
         //check for child fw match
         if (CHILD_FW_MATCH_FLAG)
@@ -985,7 +980,7 @@ int32_t main(int argc, char *argv[])
                 continue;
             }
         }
-        
+
         if (FORCE_SCSI_FLAG)
         {
             if (VERBOSITY_QUIET < toolVerbosity)
@@ -994,7 +989,7 @@ int32_t main(int argc, char *argv[])
             }
             deviceList[deviceIter].drive_info.drive_type = SCSI_DRIVE;
         }
-        
+
         if (FORCE_ATA_FLAG)
         {
             if (VERBOSITY_QUIET < toolVerbosity)
@@ -1038,7 +1033,7 @@ int32_t main(int argc, char *argv[])
 
         if (VERBOSITY_QUIET < toolVerbosity)
         {
-			printf("\n%s - %s - %s - %s\n", deviceList[deviceIter].os_info.name, deviceList[deviceIter].drive_info.product_identification, deviceList[deviceIter].drive_info.serialNumber, print_drive_type(&deviceList[deviceIter]));
+            printf("\n%s - %s - %s - %s\n", deviceList[deviceIter].os_info.name, deviceList[deviceIter].drive_info.product_identification, deviceList[deviceIter].drive_info.serialNumber, print_drive_type(&deviceList[deviceIter]));
         }
 
         //now start looking at what operations are going to be performed and kick them off
@@ -1242,7 +1237,7 @@ int32_t main(int argc, char *argv[])
                 break;
             }
         }
-        
+
         if (SHORT_DST_FLAG)
         {
             int32_t DSTResult = UNKNOWN;
@@ -1308,8 +1303,8 @@ int32_t main(int argc, char *argv[])
         {
             FILE *firmwareFilePtr = NULL;
             bool fileOpenedSuccessfully = true;//assume true in case of activate command
-			firmwareUpdateData dlOptions; 
-			memset(&dlOptions, 0, sizeof(firmwareUpdateData));
+            firmwareUpdateData dlOptions;
+            memset(&dlOptions, 0, sizeof(firmwareUpdateData));
             if (DOWNLOAD_FW_MODE != DL_FW_ACTIVATE)
             {
                 //open the file and send the download
@@ -1359,11 +1354,11 @@ int32_t main(int argc, char *argv[])
                     }
                     fread(firmwareMem, sizeof(uint8_t), firmwareFileSize, firmwareFilePtr);
 
-					dlOptions.dlMode = DOWNLOAD_FW_MODE;					
-					dlOptions.segmentSize = 0;
-					dlOptions.firmwareFileMem = firmwareMem;
-					dlOptions.firmwareMemoryLength = firmwareFileSize;
-					switch (firmware_Download(&deviceList[deviceIter], &dlOptions) )
+                    dlOptions.dlMode = DOWNLOAD_FW_MODE;
+                    dlOptions.segmentSize = 0;
+                    dlOptions.firmwareFileMem = firmwareMem;
+                    dlOptions.firmwareMemoryLength = firmwareFileSize;
+                    switch (firmware_Download(&deviceList[deviceIter], &dlOptions) )
                     {
                     case SUCCESS:
                         if (VERBOSITY_QUIET < toolVerbosity)
@@ -1714,7 +1709,7 @@ int32_t main(int argc, char *argv[])
                 {
                     localRange = deviceList[deviceIter].drive_info.deviceMaxLba - localStartLBA + 1;
                 }
-                if (PARTIAL_DATA_ERASE_FLAG)
+                if (DATA_ERASE_FLAG)
                 {
                     switch (trim_Unmap_Range(&deviceList[deviceIter], localStartLBA, localRange))
                     {
@@ -1745,9 +1740,9 @@ int32_t main(int argc, char *argv[])
                     if (VERBOSITY_QUIET < toolVerbosity)
                     {
                         printf("\n");
-                        printf("You must add the flag:\n\"%s\" \n", PARTIAL_DATA_ERASE_ACCEPT_STRING);
+                        printf("You must add the flag:\n\"%s\" \n", DATA_ERASE_ACCEPT_STRING);
                         printf("to the command line arguments to run a trim/unmap operation.\n\n");
-                        printf("e.g.: %s -d %s --%s 0 --%s %s\n\n", util_name, deviceHandleExample, TRIM_LONG_OPT_STRING, CONFIRM_LONG_OPT_STRING, PARTIAL_DATA_ERASE_ACCEPT_STRING);
+                        printf("e.g.: %s -d %s --%s 0 --%s %s\n\n", util_name, deviceHandleExample, TRIM_LONG_OPT_STRING, CONFIRM_LONG_OPT_STRING, DATA_ERASE_ACCEPT_STRING);
                     }
                 }
             }
@@ -1763,7 +1758,7 @@ int32_t main(int argc, char *argv[])
 
         if (RUN_OVERWRITE_FLAG)
         {
-            if (PARTIAL_DATA_ERASE_FLAG)
+            if (DATA_ERASE_FLAG)
             {
                 //check the time
                 uint64_t overwriteSeconds = SECONDS_TIME_FLAG + (MINUTES_TIME_FLAG * 60) + (HOURS_TIME_FLAG * 3600);
@@ -1869,9 +1864,9 @@ int32_t main(int argc, char *argv[])
                 if (VERBOSITY_QUIET < toolVerbosity)
                 {
                     printf("\n");
-                    printf("You must add the flag:\n\"%s\" \n", PARTIAL_DATA_ERASE_ACCEPT_STRING);
+                    printf("You must add the flag:\n\"%s\" \n", DATA_ERASE_ACCEPT_STRING);
                     printf("to the command line arguments to run an overwrite operation.\n\n");
-                    printf("e.g.: %s -d %s --%s 0 --%s %s\n\n", util_name, deviceHandleExample, OVERWRITE_LONG_OPT_STRING, CONFIRM_LONG_OPT_STRING, PARTIAL_DATA_ERASE_ACCEPT_STRING);
+                    printf("e.g.: %s -d %s --%s 0 --%s %s\n\n", util_name, deviceHandleExample, OVERWRITE_LONG_OPT_STRING, CONFIRM_LONG_OPT_STRING, DATA_ERASE_ACCEPT_STRING);
                 }
             }
         }
@@ -2088,7 +2083,7 @@ void utility_Usage(bool shortUsage)
 
     //SAS Only Options
     printf("\n\tSAS Only:\n\t=========\n");
-	print_Set_Ready_LED_Help(shortUsage);
+    print_Set_Ready_LED_Help(shortUsage);
     print_SAS_Phy_Help(shortUsage);
 
 

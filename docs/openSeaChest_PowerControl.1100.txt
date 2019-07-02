@@ -1,9 +1,9 @@
-openSeaChest_Firmware.Win.txt                             Revision: 13-Nov-2018
+openSeaChest_PowerControl.txt                             Revision: 08-Jan-2019
 ===============================================================================
- openSeaChest_Firmware for Windows - Seagate drive utilities
- Copyright (c) 2014-2018 Seagate Technology LLC and/or its Affiliates, All Rights Reserved
- openSeaChest_Firmware Version: 2.5.4
- Build Date: Oct 18 2018
+ openSeaChest_PowerControl for Linux and Windows - Seagate drive utilities
+ Copyright (c) 2014-2019 Seagate Technology LLC and/or its Affiliates, All Rights Reserved
+ openSeaChest_PowerControl Version: 1.10.0
+ Build Date: Jan  7 2018
 ===============================================================================
 Welcome to the openSeaChest open source project!
 
@@ -19,12 +19,10 @@ been made available to you under the Mozilla Public License 2.0 (MPL).  The
 openSeaChest project repository is maintained at
 https://github.com/Seagate/openSeaChest.
 
-This User Guide file contains important information about openSeaChest Firmware.
-Please read this entire file before using this software.
-
-openSeaChest_Firmware is a comprehensive command line tool that can be used to
-update firmware, also known as microcode, on Seagate disk drives (this includes
-Seagate, Maxtor, Samsung and LaCie).
+openSeaChest is a comprehensive, easy-to-use command line diagnostic tool that
+helps you quickly determine the health and status of your storage product. It
+includes several tests that will examine the physical media on your storage
+device.
 
 Many tests and commands are completely data safe, while others will change the
 drive (like firmware download or data erasure or setting the maximum capacity,
@@ -41,19 +39,42 @@ English language only and use "command line arguments" to define the various
 tasks and specific devices.  openSeaChest diagnostics are available for both
 Linux and Windows environments.
 
-Seagate products are run by firmware.  Having the latest firmware can improve
-performance and or reliability of your product.  Seagate recommends applying
-new firmware to enhance the performance and or reliability of your drive.  Like
-any software, firmware is improved over time and problems are also fixed. 
-Every drive family has a couple of firmware releases during the life of the
-product.  Please check in regularly to determine if new firmware is available
-for your drive.
+Optimization within the framework of a complex company data center requires
+dynamic technology. As storage capacity demands increase due to virtualization
+and growing volumes of data, managing power usage in an intelligent way is
+critical for reducing Total Cost of Ownership (TCO).
 
-openSeaChest_Firmware allows for both single drive and sequential batch mode
-firmware download.
+There are, roughly, three general frameworks for disk drive power management.
+The earlier specification is part of Advanced Power Management (APM) which
+provided controls over many devices in a system, including disk drives.  APM
+has since been replaced by a new framework called Extended Power Controls
+(EPC).  Seagate's implementation of EPC began to phase in starting in 2010 and
+is named by the marketing term "PowerChoice".  Seagate PowerChoice
+technology—specifically developed for enterprise environments—offers more
+energy efficiency and control over the amount of power hard drives consume.
 
-If this is your drive, you should always keep a current backup of your
-important data.
+You may need to learn what capabilities for power management your drive offers,
+such as supporting APM or EPC, and maybe both.  See the commands
+--showEPCSettings or --showAPMLevel(SATA Only) or --deviceInfo for various
+reports containing power settings and features supported.  Most enterprise
+drives after 2016 only support EPC (PowerChoice).
+
+PowerChoice technology improves on earlier technology and allows for
+energy-saving during periods of command inactivity, allowing for greater power
+reductions. As idle time increases, the power-saving benefits also increase,
+and the drives will still quickly respond to commands even after long idling
+periods. In addition, PowerChoice technology supports four customizable modes
+to give businesses significantly more control of power usage by allowing for up
+to a 54% reduction in the amount of energy used.
+
+See the section below "How PowerChoice Technology Works"
+
+The third and newest drive power management framework exists for SATA drives
+and is named PowerBalance.  Seagate's PowerBalance feature will adjust drive
+performance during random operations to reduce power consumption of the drive.
+
+This User Guide file contains important information about openSeaChest
+PowerControl.  Please read this entire file before using this software.
 
 Note: One gigabyte, or GB, equals one billion bytes when referring to hard
 drive capacity. This software may use information provided by the operating
@@ -64,34 +85,36 @@ decimal calculation for gigabyte or GB (10^9) shows the expected abbreviated
 size. See this FAQ for more information
 <http://knowledge.seagate.com/articles/en_US/FAQ/172191en?language=en_US>.
 
-Be very careful using openSeaChest_Firmware. Power failure during a firmware
-download will cause data loss. Never apply firmware to a drive unless you are
-certain that the firmware data file is specifically prepared for your drive.
-Seagate is not responsible for lost user data.
+If this is your drive, you should always keep a current backup of your
+important data.
 
-NOTE: openSeaChest_Firmware may not be fully functional on non-Seagate drives.
+Usage - Linux
+=============
+        openSeaChest_PowerControl [-d <sg_device>] {arguments} {options}
 
-NOTE: Windows severely restricts downloading firmware to SATA drives.  Please
-see the section below "Windows Restrictions Over SATA Firmware Downloads".
-openSeaChest_Firmware may not be fully functional on non-Seagate drives.
+Examples - Linux
+================
+        openSeaChest_PowerControl --scan
+        openSeaChest_PowerControl -d /dev/sg2 -i
+        openSeaChest_PowerControl -d /dev/sg1 --deviceInfo
 
-Usage
-=====
-        openSeaChest_Firmware [-d <device>] {arguments} {options}
+Usage - Windows
+===============
+        openSeaChest_PowerControl [-d <device>] {arguments} {options}
 
-Examples
-========
-        openSeaChest_Firmware --scan
-        openSeaChest_Firmware -d PD2 -i
-        openSeaChest_Firmware -d PD2 --fwdlInfo
+Examples - Windows
+==================
+        openSeaChest_PowerControl --scan
+        openSeaChest_PowerControl -d PD0 -i
+        openSeaChest_PowerControl -d PD1 --deviceInfo
 
 Utility arguments
 =================
         -s, --scan
-                Scan the system and list all storage devices with Physical
-                Device assignments. Shows model, serial and firmware numbers.
-                If your device is not listed on a scan immediately after
-                booting, then wait 10 seconds and run it again.
+                Scan the system and list all storage devices with logical
+                /dev/sg? assignments. Shows model, serial and firmware
+                numbers. If your device is not listed on a scan immediately
+                after booting, then wait 10 seconds and run it again.
 
         -S, --Scan   (note the capital letter S)
                 This option is the same as --scan or -s, however it will also
@@ -114,6 +137,10 @@ Utility arguments
                      interfaceATA   - show devices on an ATA interface
                      interfaceUSB   - show devices on a USB interface
                      interfaceSCSI  - show devices on a SCSI or SAS interface
+                    Linux:
+                     sd             - show /dev/sd? device handles
+                     sgtosd         - show the sd and sg device handle mapping
+                    Windows:
                      ignoreCSMI     - do not scan for any CSMI devices
                      allowDuplicates - allow drives with both CSMI and PD
                                        handles to show up multiple times in the
@@ -126,11 +153,12 @@ Utility arguments
 
         -d, --device <device handle>
                 Use this option with all commands, except --scan, to specify
-                the PD physical device handle (target drive) on which to
-                perform an operation. See the section below 'Tool Usage Hints'
-                for information about defining multiple device handles.
+                the sg device handle (target drive) on which to perform an
+                operation. See the section below 'Tool Usage Hints' for
+                information about defining multiple device handles.
 
-                Example: -d PD0, or -d PD3
+                Example Lin: -d /dev/sg5
+                Example Win: -d PD0, or -d PD3
 
         -i, --deviceInfo
                 Show information and features for the storage device. USB
@@ -148,77 +176,199 @@ Utility arguments
                 interface.  Ready or Not Ready are the outputs.  Not Ready
                 results will also include the full SCSI Sense Code.
 
-        --fwdlInfo
-                Use this option to show the firmware download support
-                information for a drive.
+        --checkPowerMode
+                Get the current power mode of a drive. On SCSI devices, this
+                will only work if the drive has transitioned from active state
+                to another state.  While the popular /dev/sd? device handles
+                can be used in most cases, the --checkPowerMode command with
+                /dev/sd causes the drive to wake up if it is in a reduced power
+                state.  Use /dev/sg device handles to avoid this effect.
 
-        --downloadFW [fwfilename]
-                Download firmware to a Seagate storage product. Use only
-                Seagate authorized firmware data files which are designated for
-                the specific model drive. Improper use of this option may harm
-                a device and or its data. You may specify the path if the
-                firmware data file is in a different location. This option will
-                use segmented download by default. Use the --downloadMode
-                option to specify a different download mode.
+        --spinDown
+                Removes power to the disk drive motor with the Standby
+                Immediate for SATA, or standby_z for SAS. Use this before
+                moving a hard disk drive. The drive will spin back up if the
+                operating system selects the drive. This means that an active
+                drive will not stay spun down.
 
-                Please see the section below "Windows Restrictions Over SATA
-                Firmware Downloads".
+        --idle
+                This command will transition a drive to the idle power state.
+                This command may flush the cache before the transition to this
+                state.  This command is for non-EPC enabled drives. If the
+                drive has the EPC feature enabled, it is recommended that the
+                --transitionPower option be used instead. This option is
+                compatible with EPC enabled drives as well, but offers less
+                control over the transition. If the operating system selects
+                this drive, it will transition it back to an active state.
 
-        --downloadMode [full | segmented | deferred]
-                Use this command along with the --downloadFW option to set the
-                firmware download mode.
+        --idleUnload
+                This command will transition a drive to the idle, heads
+                unloaded, power state. This command may flush the cache before
+                the transition to this state.  This command is for non-EPC
+                enabled drives.  If the drive has the EPC feature enabled, it
+                is recommended that the --transitionPower option be used
+                instead. This option is compatible with EPC enabled drives as
+                well, but offers less control over the transition. If the
+                operating system selects this drive, it will transition it back
+                to an active state.
 
-                Supported Modes:
-                     full      - Performs a download in one large transfer to
-                                 the device.
-                     segmented - Downloads the firmware in multiple segments to
-                                 the device. (Most compatible)
-                     deferred  - Performs a segmented download to the device,
-                                 but does not activate the new firmware until a
-                                 power cycle or activate command is sent. Drives
-                                 with this feature are not common. See
-                                 --activateFW.
+        --standby
+                This command will transition a drive to the standby power
+                state.  This command will flush the cache before the transition
+                to this state.  This command is for non-EPC enabled drives. If
+                the drive has the EPC feature enabled, it is recommended that
+                the --transitionPower option be used instead. This option is
+                compatible with EPC enabled drives as well, but offers less
+                control over the transition.  On an HDD, this will cause the
+                spindle motor to stop.  If the operating system selects this
+                drive, it will transition it back to an active state.
 
-                Note: See the --modelMatch and --onlyFW utility options which
-                may assist in creating commands to update multiple similar
-                drives.
+        --active
+                This command will transition a drive to the active power state.
+                This uses a ATA read-verify command to a random LBA, or a SCSI
+                start-stop unit command.
 
-        --activateFW
-                Use this option to issue the command to activate code that was
-                sent to the drive using a deferred download command. This will
-                immediately activate the new code on the drive. You can use
-                this along with a --downloadFW and --downloadMode deferred to
-                automatically issue the activate command after the deferred
-                download has completed.
+        --showEPCSettings
+                Use this option to show the current Extended Power Conditions
+                (EPC) settings on the screen. Only drives supporting the EPC
+                feature will show this data and only supported power conditions
+                will be shown.
 
-        --fwdlSegSize [segment size in 512B blocks]
-                Use this option to specify a segment size in 512B blocks to use
-                for a segmented or deferred download. This option will not
-                affect an immediate download (full buffer at once). The default
-                segment size used is 64. Larger segment sizes may be faster,
-                however they may also be incompatible with controllers or
-                drivers in the system. Smaller values are more likely to be
-                compatible, but also slower. Use this option if the default
-                used by the tool is not working correctly for firmware updates.
+        --EPCfeature [enable | disable]
+                Enables or disables Extended Power Conditions (EPC) support for
+                devices.  To disable EPC use --EPCfeature disable. Note that the
+                EPC Feature Set is not supported on all devices. Use
+                --deviceInfo option to see if EPC is supported.
 
-        --firmwareSlot/--fwBufferID slot#
-                Use this option to specify a firmware slot (NVMe) or a buffer
-                ID (SCSI) along with the --downloadMode (SCSI) or --activateFW
-                (NVMe & SCSI) options.  If this option is not used, a value of
-                zero will be used instead, which means the drive will
-                automatically select the slot number.
+        --changePower
+                Use this option to enable or disable certain --powerMode and
+                their timers. You can also use this option to restore default
+                values to the drive. The available power modes are idle_a,
+                idle_b, idle_c, standby_y (SAS only), standby_z, or all. "all"
+                can only be used to enable/disable/default everything. It
+                cannot be used to set a timer. Timer values are specified in
+                milliseconds.
 
-        --allowFlexibleFWDLAPIUse
-                This option is used to control when to use the Windows 10+
-                Firmware Download API calls. Default behavior is to only use
-                this call when the interface and drive and command all match.
-                The default behavior means that only ATA drives on an ATA
-                interface with a ATA download command will use this call. SCSI
-                SAS drives with a supported write buffer command will also use
-                this call. Using this option allows a detected ATA drive on any
-                interface to use this call if the OS/driver supports it
-                regardless of the command being sent by the opensea-transport
-                library.
+                Example restore: --changePower --defaultMode --powerMode idle_a
+                Example enable: --changePower --enableMode --powerMode idle_a
+                Example set timer: --changePower --enableMode --powerMode idle_a
+                                   --modeTimer 5000
+
+        --enableMode
+                Use this option with the --changePower mode option to enable
+                a specific --powerMode.
+
+        --modeTimer [timer value in milliseconds]
+                Use this option to specify a timer value to use with the
+                --changePower mode option.
+
+        --disableMode
+                Use this option with the --changePower mode option to disable
+                a specific --powerMode.
+
+        --defaultMode
+                Use this option with the --changePower mode option to restore
+                the default settings for a specific --powerMode.  The "all"
+                option is only valid for SAS interface drives.
+
+        --transitionPower
+                Use this option to actively change --powerMode. The available
+                power modes are idle_a, idle_b, idle_c, standby_y (SAS only),
+                standby_z, or active (SAS only).
+
+                Note: Hard disk drives require a few seconds time to spin up or
+                down. The drive will report the old power mode until it is
+                fully established in the new mode.  The openSeaChest --spinDown
+                command is similar.  On SAS --spinDown is equivalent to Motor
+                Stop and --transitionPower --powerMode active is equivalent to
+                Motor Start.
+
+                Example: --transitionPower --powerMode idle_a
+                Example: --transitionPower --powerMode standby_y
+
+        --powerMode [powermode]
+                Use this option to specify a power mode. This should be used
+                with the --changePower or --transitionPower options.
+                Valid power modes (SAS and SATA):
+                        idle_a
+                        idle_b
+                        idle_c
+                        standby_y (SAS only)
+                        standby_z
+                        active (SAS only, used with --trasitionPower)
+                        all (used with --changePower enable, disable or default)
+                Valid power modes (NVMe): 0 - 30
+
+        --showPowerConsumption  (SAS Only)
+                This option will show the power consumption rates supported by
+                the device and the current power consumption rate of the
+                device. Use a supported watt value with the
+                --setPowerConsumption option to set the power consumption to
+                that value.
+
+        --setPowerConsumption [default | highest | intermediate | lowest |
+          watt value]   (SAS Only)
+                This option will set the power consumption rate of the device
+                to the value input.
+                Options:
+                        default - sets the device back to default settings
+                        highest - sets the active level to "highest"
+                        intermediate - sets the active level to "intermediate"
+                        lowest - sets the active level to "lowest"
+                        watt value - sets the device to a nearest watt value
+                           less than or equal to the value entered.
+
+                Power consumption watt values are listed with the
+                --showPowerConsumption command line option.
+
+        --showAPMLevel   (SATA Only)
+                Use this option to show the current Advanced Power Management
+                (APM) level of a device
+
+        --setAPMLevel [1 - 254]   (SATA Only)
+                Use this option to set the APM level of a device. Valid values
+                are between 1 and 254.
+                      1 = Minimum power consumption with standby mode
+                  2-127 = Intermediate power management with standby mode
+                    128 = Minimum power consumption without standby mode
+                129-253 = Intermediate power management without standby mode
+                    254 = Maximum Performance
+
+        --disableAPM   (SATA Only)
+                Use this option to disable the current Advanced Power Management
+                (APM) level of a device
+
+        --powerBalanceFeature [ info | enable | disable ]   (SATA Only)
+                Use this option to see the state of the Seagate PowerBalance
+                feature or to change its state. Seagate's PowerBalance feature
+                will adjust drive performance during random operations to
+                reduce power consumption of the drive.
+                    info - will display the state of the PowerBalance feature
+                           on the screen
+                    enable - use this to enable PowerBalance
+                    disable - use this to disable PowerBalance
+                Note: SAS products should use the --setPowerConsumption option
+                instead.
+
+        --sataDAPSfeature [info | enable | disable ]    (SATA Only)
+                Use this option to enable or disable the SATA Device Automatic
+                Partial To Slumber Transitions (DAPS) feature. Use the "info"
+                option to see the current state of the DIPM feature on the
+                device. The use of this feature requires that the DIPM feature
+                is enabled.
+
+                NOTE: Please ensure that the host adapter/controller/driver can
+                handle this before enabling it, otherwise the drive link may go
+                down and the device will not be able to communicate.
+
+        --sataDIPMfeature [info | enable | disable ]    (SATA Only)
+                Use this option to enable or disable the SATA Device Initiated
+                Power Management (DIPM) feature. Use the "info" option to see
+                the current state of the DIPM feature on the device.
+
+                NOTE: Please ensure that the host adapter/controller/driver can
+                handle this before enabling it, otherwise the drive link may go
+                down and the device will not be able to communicate.
 
 Utility Options
 ===============
@@ -227,7 +377,7 @@ Utility Options
 
         -v [0-4], --verbose [0 | 1 | 2 | 3 | 4]
                 Show verbose information. Verbosity levels are
-                0 - quiet,
+                0 - quiet
                 1 - default
                 2 - command descriptions
                 3 - command descriptions and values
@@ -285,13 +435,6 @@ Utility Options
                 The option --childOnlyFW may be used to match drives in USB
                 enclosures.
 
-        --newFW [firmware revision]
-                Use this option to skip drives matching the provided firmware
-                revision. This option will only do an exact match. This option
-                should be used to skip performing an update if a drive already
-                has this firmware revision loaded. The option --childNewFW may
-                be used to match drives in USB enclosures.
-
         --forceATA
                 Using this option will force the current drive to be treated as
                 a ATA drive. Only ATA commands will be used to talk to the
@@ -317,6 +460,7 @@ Utility Options
                 a SCSI drive. Only SCSI commands will be used to talk to the
                 drive.
 
+        Windows only:
         --csmiIgnorePort
                 Use this option to force setting the "ignore Port" flag for the
                 port identifier in a CSMI passthrough command. This option can
@@ -350,16 +494,6 @@ Return codes
         6       File Path Not Found
         7       Cannot Open File
         8       File Already Exists
-        ---openSeaChest_Firmware specific exit codes---
-        32 = Firmware Download Complete
-        33 = Deferred Firmware Download Complete
-        34 = Deferred Code Activated
-        35 = No Drive or Firmware match found
-        36 = Model number matched, but Firmware mismatched
-        37 = Firmware File Hash Error
-        38 = Firmware Already up to date
-        39 = Firmware Match Found for update
-        40 = Firmware Match Found for update - deferred update supported
         Anything else = unknown error
 
 ================
@@ -367,10 +501,16 @@ Tool Usage Hints
 ================
 See Sample Output examples below.
 
-First, run the openSeaChest -s option to determine what physical device
-assignment lines up to your disk drive. This option will also show you other
-details about the drive including the current firmware revision. Like this:
+First, run the openSeaChest -s option to determine what /dev/sg? or PD? device
+handle assignment lines up to your disk drive. This option will also show you
+other details about the drive including the current firmware revision.
 
+Linux:
+Vendor     Handle       Model Number       Serial Number     FwRev
+ATA        /dev/sg0     ST94813AS          3AA043KP          3.03
+SEAGATE    /dev/sg1     ST1000NM0011       ZAA15VAS          SN03
+
+Windows:
 Vendor     Handle   Model Number        Serial Number     FwRev
 IDE        PD0      ST94813AS           3AA043KP          3.03
 SEAGATE    PD1      ST1000NM0011        ZAA15VAS          SN03
@@ -378,16 +518,21 @@ SEAGATE    PD1      ST1000NM0011        ZAA15VAS          SN03
 You can use SeaChest -s --onlySeagate to limit the display to just Seagate.
 
 All utility arguments will require you to identify the specific drive by
-providing the physical device handle (-d, --device).
+providing the sg or PD device handle (-d, --device).
 
-For example, openSeaChest_Firmware -d PD2 --shortDST poll
+Lin example, openSeaChest_Basics -d /dev/sg1 --shortDST poll
+Win example, openSeaChest_Basics -d PD2 --shortDST poll
 
 You may combine multiple tests with a single command line.  For example,
-openSeaChest_Firmware -d PD0 -i --smartCheck runs both identify and SMART.
+inLinux, openSeaChest_Basics -d /dev/sg0 -i --smartCheck runs both identify and
+SMART.  In Windows, openSeaChest_Basics -d PD0 -i --smartCheck runs both
+identify and SMART.
 
-Multiple device handles can be given by adding -d PD# for each additional
-handle.  Devices are processed in sequential order.  For example,
-SeaChest_Basics -d PD0 -d PD3 -i runs identify on these two devices.
+Multiple device handles can be given by adding -d /dev/sg# for each additional
+handle.  Devices are processed in sequential order.  For example, in Linux,
+openSeaChest_Basics -d /dev/sg0 -d /dev/sg3 -i runs identify on these two
+devices.  In Windows, openSeaChest_Basics -d PD0 -d PD3 -i runs identify on
+these two devices.
 
 Caution: All device handles may be specified.  However, great care should be
 taken to fully anticipate the consequences of running a command on all storage
@@ -397,6 +542,65 @@ be catastrophic or exactly what you want. The shortcut to select all devices is
 designation for all devices, you can narrow the tasks to specific types of
 drives by using the --onlySeagate, --modelMatch and --onlyFW filters.
 
+Tests which take a very long time to complete or erase all user data on the
+drive will require a longer command line argument than indicated in the --help
+output to the screen.  This approach is taken to eliminate the possibility of
+accidental data loss or the commitment of long test times. The longer command
+arguments are similar to -I-understand-this-command-will-take-a-long-time or
+-I-understand-this-command-will-erase-all-data.
+
+Advanced SAS installations may use dual ports.  These are listed as Port 0 and
+Port 1 on the device information report. When both ports are active, each one
+may have a unique /dev/sg designation.  The scan option may indicate that there
+are two drives in the system with the same serial number.  Dual port
+installations will also report two different Worldwide Numbers (WWN).
+
+================================
+How PowerChoice Technology Works
+================================
+See the Seagate technology paper "Seagate® PowerChoice™ Technology Provides
+Unprecedented Hard Drive Power Savings and Flexibility"
+http://www.seagate.com/files/docs/pdf/en-GB/whitepaper/tp608-powerchoice-tech-provides-gb.pdf
+
+Each individual power condition builds on the capabilities of the previous
+higher power condition in order to save incrementally more power. The specific
+energy-saving steps implemented for each power condition are as follows:
+
+Idle_A
+        - Disables most of the servo system, reduces processor and channel
+        power consumption
+        - Discs rotating at full speed (7,200 RPM)
+Idle_B
+        - Disables most of the servo system, reduces processor and channel
+        power consumption
+        - Heads are unloaded to drive ramp.
+        - Discs rotating at full speed (7,200 RPM)
+Idle_C/Standby_Y (SAS Only)
+        - Disables most of the servo system, reduces processor and channel
+        power consumption
+        - Heads are unloaded to drive ramp.
+        - Drive speed reduced to a lower RPM (reduced RPM)
+Standby_Z
+        - Heads are unloaded to drive ramp.
+        - Drive motor is spun down.
+        - Drive still responds to non-media access host commands.
+
+Flexibility is a key feature of PowerChoice technology, enabling commands from
+the host side to customize power condition settings and direct a drive into or
+out of power conditions as required. Two different options are available for
+the user to modify PowerChoice technology settings, depending on the interface
+used:
+
+SAS
+        Host-definable timers via mode pages
+        Immediate host-commanded power transitions via Start/Stop Unit (SSU)
+        command
+SATA
+        Host-definable timers via Set Features commands
+        Immediate host-commanded power transitions via Set Features commands
+
+Windows Only Usage
+==================
 All Windows version tools support finding CSMI devices and talking to them like
 you would a normal device.  The scan output will show all drives it detects
 ONCE. CSMI device handles have a structure like SCSI0:1.  If a drive has both a
@@ -412,44 +616,85 @@ line.  If you don't want to see any CSMI devices, add --scanFlags ignoreCSMI to
 the command line.  SeaChest_Info -d SCSI?:? --csmiInfo is useful when
 troubleshooting CSMI device handles questions.
 
-Tests which take a very long time to complete or erase all user data on the
-drive will require a longer command line argument than indicated in the --help
-output to the screen.  This approach is taken to eliminate the possibility of
-accidental data loss or the commitment of long test times. The longer command
-arguments are similar to "I-understand-this-command-will-take-a-long-time" or
-"I-understand-this-command-will-erase-all-data".
+=========================
+Linux General Usage Hints
+=========================
+Remember that Linux file names and command line arguments are cAsE SeNsiTiVe.
 
-Advanced SAS installations may use dual ports.  These are listed as Port 0 and
-Port 1 on the device information report. When both ports are active, each one
-may have a unique /dev/sg designation.  The scan option may indicate that there
-are two drives in the system with the same serial number.  Dual port
-installations will also report two different Worldwide Numbers (WWN).
+Display a file listing with the Linux command: ls -lah
 
-Windows Restrictions Over SATA Firmware Downloads
--------------------------------------------------
-You should not attempt downloading firmware to a SATA disk drive in the Windows
-operating system unless the drive supports the 'deferred' mode.  You define the
-mode with the openSeaChest command line option '--downloadMode deferred'.  If
-the drive does not support deferred mode then the command will be aborted.
-Windows may not be so restrictive on secondary, non-boot SATA drives or SATA
-drives attached to host bus adapters (HBAs, controllers, USB, etc).
+The tool will require root privileges to run using either sudo or su commands.
+Also, verify that the tool has executable rights.
 
-If you force a primary SATA boot drive to download firmware in Windows using a
-different --downloadMode setting, then the result will likely be a BSOD (blue
-screen of death) system crash.  This is because the legacy SATA firmware
-download modes require the drive to spin down and then back up and the
-momentary disappearance of the drive causes the operating system to crash.
-Windows is actually protecting the system when it thinks the drive has stopped
-responding (see wikis about Ring 0 Protection).
+A dot slash is a dot followed immediately by a forward slash (./). It is used
+in Linux to execute a compiled program in the current directory when it is not
+a built-in command or found in your path.
 
-The 'deferred' mode does not spin down the drive.  Instead, the drive waits for
-a future reboot of the system and self-activates the firmware at that time.
-Other operating systems may utilize the openSeaChest --activateFW command to
-trigger the switch to the new firmware version.
+For example, ./openSeaChest -d /dev/sg0 --shortDST poll
+or, sudo ./openSeaChest -d /dev/sg0 --shortDST poll
 
-===================
-General Usage Hints
-===================
+Shut down the files system and remove the power with the command:
+poweroff
+
+See previous screen history with the key combination:
+Shift+PgUp or Shift+PgDn
+
+Save a log file by redirecting the screen output to a text file by adding space
+&>test.log at the end of your command line. Choose your own file name. To
+append the screen output to an existing log file use >>test.log.
+
+To save a log and display results at the conclusion of the tests, you can use
+the "tee" command. Tee command writes to the STDOUT and to a file.
+For example,
+openSeaChest --echoCommandLine -d /dev/sg0 -i --smartCheck | tee -a mySeaChestLog.txt
+
+Display a log or text file with the Linux "less" command: less myfile.log
+Press the letter q to quit displaying the file.  Similarly, you can easily
+read the Seagate License agreement by piping the output to the less
+command with openSeaChest --license |less
+
+Display a list of sg (SCSI generic) devices with the command:
+cat /sys/class/scsi_generic/sg*/device/model
+or
+ls /dev/sg*
+
+sg devices include the following interfaces: SATA, USB, SCSI (SCSI, SAS and FC)
+
+Add the command word 'time' on the same command line before the openSeaChest
+command to see how much time it takes to run a test.
+For example, time ./openSeaChest -d /dev/sg0 --shortDST poll
+
+When drives are not detected by openSeaChest
+--------------------------------------------
+The problem is that the sg driver isn't loaded on the system on boot.  You can
+test if it is loaded by doing "ls /dev/sg*" and see if anything shows up. If
+nothing shows up then the SG driver is missing (which is required by
+openSeaChest to issue commands).
+
+You need to do "modprobe sg" as root to load the sg module (since it wasn't
+compiled into the kernel), then you will get sg devices that we can scan and
+find. Once you run the modprobe command and sg is successfully loaded, then you
+can re-run "ls /dev/sg*" and see SG device nodes. openSeaChest tools should
+then be able to find devices once again.
+
+How to control the amount of runtime kernel messages
+----------------------------------------------------
+When testing more drives than a system can hold, careful use of host adapters
+and hot-plugging batches of drives (but never to direct motherboard
+connections!) can help speed the process.  The Linux operating system will
+display various system error messages, or none, when storage devices are
+powered down and exchanged with the next drives.  The amount of information
+contained in the OS error messages can be reviewed using the Linux utility
+command "sysctl kernel.printk".  The default setting is defined by the
+particular distro.  Tiny Core Linux, for example may set "4 4 1 7".  To hide
+hot-plugging messages try "3 4 1 7", to increase the messaging to include
+device details like model numbers try "6 4 1 7".  The command to set is 'sudo
+sysctl -w kernel.printk="6 4 1 7"'.  See man sysctl - "configure kernel
+parameters at runtime" for more.
+
+===========================
+Windows General Usage Hints
+===========================
 The tool will require Administrative privileges to run.
 Also, verify that the tool has executable rights.
 
@@ -488,10 +733,11 @@ Sample Output
 
 SATA HDD Device Information:
 
-openSeaChest_Firmware -i -d PD1
+Lin: sudo ./openSeaChest_Basics -i -d /dev/sg1
+Win: openSeaChest_Basics -i -d PD1
 ===============================================================================
- openSeaChest_Firmware - Seagate drive utilities
- Copyright (c) 2014-2017 Seagate Technology LLC and/or its Affiliates, All Rights Reserved
+ openSeaChest - Seagate drive utilities
+ Copyright (c) 2014-2019 Seagate Technology LLC and/or its Affiliates, All Rights Reserved
 ===============================================================================
         Model Number: ST4000DX001-1CE168
         Serial Number: ZQ3034X7R
@@ -563,10 +809,11 @@ openSeaChest_Firmware -i -d PD1
 
 SATA SSD Device Information:
 
-openSeaChest_Firmware -d PD2 -i
+Lin: sudo ./openSeaChest_Basics -i -d /dev/sg1
+Win: openSeaChest_Basics -i -d PD1
 ===============================================================================
- openSeaChest_Firmware - Seagate drive utilities
- Copyright (c) 2014-2017 Seagate Technology LLC and/or its Affiliates, All Rights Reserved
+ openSeaChest - Seagate drive utilities
+ Copyright (c) 2014-2019 Seagate Technology LLC and/or its Affiliates, All Rights Reserved
 ===============================================================================
         Model Number: ST120FP0021
         Serial Number: PQ57011BD
@@ -602,7 +849,7 @@ openSeaChest_Firmware -d PD2 -i
         Drive Reported Utilization (%): Not Reported
         Encryption Support: Not Supported
         Cache Size (MiB): Not Reported
-        Percentage Used Endurance Indicator (%): 0.00000
+        Percentage Used Endurance Indicator (%): 1.00437
         Read Look-Ahead: Enabled
         Write Cache: Enabled
         SMART Status: Good
@@ -629,10 +876,11 @@ openSeaChest_Firmware -d PD2 -i
 
 SAS HDD Device Information:
 
-openSeaChest_Firmware -i -d PD0
+Lin: sudo ./openSeaChest_Basics -i -d /dev/sg1
+Win: openSeaChest_Basics -i -d PD1
 ===============================================================================
- openSeaChest_Firmware - Seagate drive utilities
- Copyright (c) 2014-2017 Seagate Technology LLC and/or its Affiliates, All Rights Reserved
+ openSeaChest - Seagate drive utilities
+ Copyright (c) 2014-2019 Seagate Technology LLC and/or its Affiliates, All Rights Reserved
 ===============================================================================
         Model Number: ST4000NM0043
         Serial Number: Z1QZ04KVG
@@ -692,10 +940,11 @@ openSeaChest_Firmware -i -d PD0
 
 SAS SSD: Device Information
 
-openSeaChest_Firmware -d PD3 -i
+Lin: sudo ./openSeaChest_Basics -i -d /dev/sg1
+Win: openSeaChest_Basics -i -d PD1
 ===============================================================================
- openSeaChest_Firmware - Seagate drive utilities
- Copyright (c) 2014-2017 Seagate Technology LLC and/or its Affiliates, All Rights Reserved
+ openSeaChest - Seagate drive utilities
+ Copyright (c) 2014-2019 Seagate Technology LLC and/or its Affiliates, All Rights Reserved
 ===============================================================================
         Model Number: ST400FM0053
         Serial Number: P3QF13026
@@ -758,58 +1007,61 @@ openSeaChest_Firmware -d PD3 -i
 ===============
 Version History
 ===============
-v0.0.1  22-Mar-2016  1_9_1 libraries.  SeaChest_Firmware Windows, initial beta
-                     test release.  Branched from SeaChest_Basics v1.1.0.  Adds
-                     firmware download batch modes by model number and various
-                     firmware revision checks.
-v0.0.2  19-May-2016  1_9_2 libraries fixed scan information from ATAPI devices.
+SeaChest_PowerChoice is branched off from SeaChest Basics v1.0.3.
+
+v0.0.1  14-Apr-2015  Intitial PowerChoice release.
+v0.0.2  12-Aug-2015  Added --testUnitReady. Improved device discovery.
+                     Corrections to verbose output.
+v0.0.4  22-Sep-2015  Added --showPowerConsumption and --setPowerConsumption,
+                     both are SAS only.
+v0.0.4  16-Oct-2015  1_7_0 libraries.  Added enhanced version information.
+                     Added -sat12byte to increase compatibility.  Added
+                     --SATInfo to compare ATA vs SCSI identification
+                     differences.
+v0.0.6  26-Jan-2016  1_8_1 libraries.  Added --EPCfeature for SATA.
+v1.0.0  02-May-2016  1_9_1 libraries.  Added new verbosity level. Added
+                     --onlySeagate restriction.  Added --modelMatch and
+                     --onlyFW filters.
+v1.0.2  19-May-2016  1_9_2 libraries fixed scan information from ATAPI devices.
                      Fixed a bug where we could accidentally clear some stored
                      identify data from the device structure. Fixed continuing
                      on when there was a permission denied error opening a
-                     drive.
-v1.0.0  15-Jun-2016  1_9_3 libraries fixed issues with ATA secure erase
+                     drive. Fixed --checkPowerMode always returning "active" on
+                     SAT interfaces (SATA over SAS). Fixed --transitionPower
+                     always failing (It was  trying an incompatible value).
+v1.0.3  15-Jun-2016  1_9_3 libraries fixed issues with ATA secure erase
                      commands. Fixed bugs with --modelMatch and --onlyFW
                      filters.
-v1.1.0  06-Jul-2016  1_10_0 libraries add --forceATA and --forceSCSI.
-v1.1.0  14-Jul-2016  1_10_1 libraries adds SMART and power management
+v1.2.0  06-Jul-2016  1_10_0 libraries add --forceATA and --forceSCSI.  Added
+                     --showEPCSettings, --showAPMLevel, and --setAPMLevel.
+v1.2.1  14-Jul-2016  1_10_1 libraries adds SMART and power management
                      functions, format polling, endianess detection, buffer
                      size fixes, SAS device statistics, Win32 IOCTL
-                     pass-through fix on Win8 and higher.
-v2.0.3  16-Aug-2016  Adds --fwdlInfo, --activateFW, --fwdlConfig and
-                     --fwdlSegSize.  Add user defined configuration
-                     files.
-v2.1.0  01-Sep-2016  1_11_1 libraries updates to various printed message,
-                     minor bug fixes. Fixed --SATInfo command. After firmware
-                     download messages improved. Logic to exclude using both
-                     --fwdlConfig and --downloadFW at the same time.
-v2.1.0  21-Sep-2016  1_11_2 libraries updates adds --forceATADMA, --forceATAPIO
+                     pass-through fix on Win8 and higher. Added --disableAPM.
+v1.3.0  01-Sep-2016  1_11_1 libraries updates to various printed message,
+                     minor bug fixes. Fixed --SATInfo command.
+v1.3.0  21-Sep-2016  1_11_2 libraries updates adds --forceATADMA, --forceATAPIO
                      and --forceATAUDMA  (SATA Only).
-v2.2.0  10-Oct-2016  1_11_4 libraries updates. Support for multiple devices.
-v2.2.0  25-Oct-2016  1_11_5 libraries updates improved LaCie  detection, adds
+v1.4.0  10-Oct-2016  1_11_4 libraries updates. Support for multiple devices.
+v1.4.0  25-Oct-2016  1_11_5 libraries updates improved LaCie  detection, adds
                      SAT Vendor ID, SAT Product ID, and SAT Product Revision to
                      the -i --SATInfo output.
-v2.2.2  27-Oct-2016  1_11_6 libraries updates WWN detection.  Added
+v1.4.1  27-Oct-2016  1_11_6 libraries updates WWN detection.  Added
                      --enableLegacyUSBPassthrough
-v2.2.2  03-Nov-2016  1_11_7 libraries fixed issue with SAS EPC power mode
+v1.4.2  03-Nov-2016  1_11_7 libraries fixed issue with SAS EPC power mode
                      settings.
-v2.2.2  13-Dec-2016  1_11_10 libraries fixes a problem when using maxLBA without
+v1.4.2  13-Dec-2016  1_11_10 libraries fixes a problem when using maxLBA without
                      the corresponding command range option, SAS power mode
                      setting, and Sanitize erase patterns.
-v2.3.0  23-Feb-2017  1_13_0 libraries adds support for SAS 12.0Gb/s and
+v1.5.0  23-Feb-2017  1_13_0 libraries adds support for SAS 12.0Gb/s and
                      22.5Gb/s physical bus speeds, support for double buffered
-                     passthrough IOCTLs. Add --fwdlDryRun. New -F, --scanFlags
-                     [options: ignoreCSMI allowDuplicates] for Windows tools.
-                     Add CSMI support to all Windows version tools.
-v2.3.0  06-Mar-2017  1_13_2 libraries adds Enhanced device information output
+                     passthrough IOCTLs. EPCfeature now supports SAS. New -F,
+                     --scanFlags [options: ignoreCSMI allowDuplicates] for
+                     Windows tools. Add CSMI support to all Windows version
+                     tools.
+v1.5.0  06-Mar-2017  1_13_2 libraries adds Enhanced device information output
                      for SAS features.
-v2.3.2  09-Mar-2017  Fixes to config file processing.
-v2.3.3  12-Apr-2017  1_13_4 libraries. Fixes issue where tool was not
-                     defaulting to segmented download if not specified.  Adds
-                     several new return exit codes to help manage scripts using
-                     configuration files.
-v2.3.4  10-May-2017  1_13_4 libraries. Fixes issue where where --fwdlInfo
-                     command was sometimes missing segmented on SAS products.
-v2.4.0  14-Jun-2017  1_15_0 libraries adds bug fix malformed command line
+v1.6.0  14-Jun-2017  1_15_0 libraries adds bug fix malformed command line
                      should exit with code = 1; added detection of parallel ATA
                      and SCSI speeds; temperature data on ATA now uses the
                      values from the SCT status log or device statistics log.
@@ -817,57 +1069,47 @@ v2.4.0  14-Jun-2017  1_15_0 libraries adds bug fix malformed command line
                      drives like it is supposed to causing duplicate drives to
                      show up.  Adds the child drive matching options
                      --childModelMatch, --childOnlyFW, and --childNewFW.
-v2.5.0  14-Jul-2017  1_16_1 libraries adds support for ATA drives that have the
+v1.7.0  14-Jul-2017  1_16_1 libraries adds support for ATA drives that have the
                      Sense Data Reporting feature enabled, changes to how we
                      interpret the completion status from the drive, new Sense
                      Data ASC, ASCQ definitions from SPC5. Adds --Scan (or -S,
                      note the capital S) aggressive system scan.
-v2.5.0  27-Jul-2017  1_16_2 libraries enhances Seagate brand detection.
-v2.5.0  19-Sep-2017  1_16_4 libraries fixes SCSI "--progress format", added
+v1.7.0  27-Jul-2017  1_16_2 libraries enhances Seagate brand detection.
+v1.7.0  19-Sep-2017  1_16_4 libraries fixes SCSI "--progress format", added
                      reading remanufacture time for SAS when the drive reports
                      a time, fixed SAS --abortDST.
-v2.5.0  25-Sep-2017  1_17_0 libraries adds improved SATA device discovery on
+v1.8.1  25-Sep-2017  1_17_0 libraries adds improved SATA device discovery on
                      SAS adapters, added NVMe read, write & Flush commands.
-v2.5.1  10-Oct-2017  1_17_1 libraries adds Better handling of NVMe as a SCSI
+                     Added --powerBalanceFeature, --sataDAPSfeature and
+                     --sataDIPMfeature, all of which are SATA only.
+v1.8.2  10-Oct-2017  1_17_1 libraries adds Better handling of NVMe as a SCSI
                      device, SAT library strings, and fixes to Read-Buffer
                      error history (ISL). Updated copyright notice, invalid
                      command line options now only display an error instead of
-                     long help. Added option to specify a buffer ID or FW slot,
-                     file name added to the output of --showFileHash. Added
-                     --firmwareSlot and --fwBufferID.
-v2.5.1  12-Oct-2017  1_17_3 libraries improves Fast-Format compatibility on SAS.
-v2.5.2  26-Oct-2017  1_17_5 libraries fixes SATA drive discovery behind HBAs
+                     long help. Name change from SeaChest_PowerChoice to
+                     SeaChest_PowerControl.
+v1.8.2  12-Oct-2017  1_17_3 libraries improves Fast-Format compatibility on SAS.
+v1.8.2  26-Oct-2017  1_17_5 libraries fixes SATA drive discovery behind HBAs
                      that don't show as SATA and don't support the SAT VPD
                      page; added Automatic fallback to 12byte CDBs during
                      initial device discovery;  integrated fixes for SAS
                      firmware download and fixes for SAS LongDST time
                      calculation; added detection of TCG Pyrite and Opalite
                      drives.
-v2.5.2  31-Oct-2017  1_17_6 libraries adds ATA Security compatibility with SATL
+v1.8.2  31-Oct-2017  1_17_6 libraries adds ATA Security compatibility with SATL
                      on some LSI adapters, corrects firmware download issue
                      under Windows 10 API.
-v2.5.2  02-Nov-2017  1_17_7 libraries fixes Long DST time on SCSI/SAS products.
+v1.8.2  02-Nov-2017  1_17_7 libraries fixes Long DST time on SCSI/SAS products.
 
-The above history is provided as a courtesy to show the orginal SeaChest
+The above history is provided as a courtesy to show the original SeaChest
 development activity.
 
 ============================
 openSeaChest Version History
 ============================
-v2.5.2  12-Nov-2017  1_17_x libraries.  Launch date of the Seagate openSeaChest
+v1.8.2  12-Nov-2017  1_17_x libraries.  Launch date of the Seagate openSeaChest
 open source project for storage devices.
-v2.5.2  26-Oct-2017  1_17_5 libraries fixes SATA drive discovery behind HBAs
-                     that don't show as SATA and don't support the SAT VPD
-                     page; added Automatic fallback to 12byte CDBs during
-                     initial device discovery;  integrated fixes for SAS
-                     firmware download and fixes for SAS LongDST time
-                     calculation; added detection of TCG Pyrite and Opalite
-                     drives.
-v2.5.2  31-Oct-2017  1_17_6 libraries adds ATA Security compatibility with SATL
-                     on some LSI adapters, corrects firmware download issue
-                     under Windows 10 API.
-v2.5.2  02-Nov-2017  1_17_7 libraries fixes Long DST time on SCSI/SAS products.
-v2.5.2  19-Apr-2018  1_18_0 libraries improves device detection of CD-ROM and
+v1.9.0  19-Apr-2018  1_18_0 libraries improves device detection of CD-ROM and
                      USB flash drives, support for early 90's PATA drives that
                      don't support LBA mode, bug fix where the last digit of
                      the SCSI Unit Serial Number was being dropped, additional
@@ -884,8 +1126,9 @@ v2.5.2  19-Apr-2018  1_18_0 libraries improves device detection of CD-ROM and
                      during device discovery to help work with some USB
                      devices, some Legacy SCSI support enhancements (partially
                      from USB hacks development), enhanced SD to SG mapping in
-                     Linux.
-v2.5.4  21-Sep-2018  1_18_2 libraries Added in reading os-release PRETTY_NAME
+                     Linux.  Added --idle (Immediate), --idleUnload, --standby
+                     (Immediate), --active.
+v1.9.1  21-Sep-2018  1_18_2 libraries Added in reading os-release PRETTY_NAME
                      field to get the OS name under linux; NVMe enabled;  fixed
                      a bug in the ATA activate FW command; added in reading ID
                      Data log and Device statistics logs page 0 to check the
@@ -896,8 +1139,11 @@ v2.5.4  21-Sep-2018  1_18_2 libraries Added in reading os-release PRETTY_NAME
                      spaces in the name. Added additional information to the
                      banner and -V data to show support levels. Add general
                      support for NVMe and NVMe specific identify data to "-i"
-                     command. Add --allowFlexibleFWDLAPIUse.
-v2.5.4  18-Oct-2018  1_18_3 libraries Added NVMe generic read command support.
+                     command.
+v1.9.1  18-Oct-2018  1_18_3 libraries Added NVMe generic read command support.
+v1.10.0 07-Jan-2019  1_19_0 libraries added per device verbosity, --deviceInfo
+                     adds SAS (not SATA) FastFormat for Features Supported
+                     section.
 
 ===========================================
 About openSeaChest Command Line Diagnostics
@@ -1014,7 +1260,7 @@ The newest online version of the openSeaChest Utilities documentation, open
 source usage and acknowledgement licenses, and our Linux USB Boot Maker FAQ can
 be found at: https://github.com/Seagate/openSeaChest.
 
-Copyright (c) 2014-2018 Seagate Technology LLC and/or its Affiliates, All Rights Reserved
+Copyright (c) 2014-2019 Seagate Technology LLC and/or its Affiliates, All Rights Reserved
 ======================================================================
 
 BINARIES and SOURCE CODE files of the openSeaChest open source project have

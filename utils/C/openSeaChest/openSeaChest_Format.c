@@ -8,7 +8,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // ******************************************************************************************
-// 
+//
 // \file openSeaChest_Format.c Binary command line that performs various format methods on a device.
 
 //////////////////////
@@ -29,13 +29,12 @@
 #include "openseachest_util_options.h"
 #include "operations.h"
 #include "drive_info.h"
-#include "format_unit.h"
-#include "set_sector_size.h"
+#include "format.h"
 ////////////////////////
 //  Global Variables  //
 ////////////////////////
 const char *util_name = "openSeaChest_Format";
-const char *buildVersion = "1.3.0";
+const char *buildVersion = "1.4.0";
 
 ////////////////////////////
 //  functions to declare  //
@@ -67,11 +66,10 @@ int32_t main(int argc, char *argv[])
     DEVICE_INFO_VAR
     SAT_INFO_VAR
     DATA_ERASE_VAR
-    PARTIAL_DATA_ERASE_VAR
     LICENSE_VAR
     ECHO_COMMAND_LINE_VAR
     SCAN_FLAG_VAR
-	AGRESSIVE_SCAN_FLAG_VAR
+    AGRESSIVE_SCAN_FLAG_VAR
     SHOW_BANNER_VAR
     SHOW_HELP_VAR
     TEST_UNIT_READY_VAR
@@ -95,9 +93,13 @@ int32_t main(int argc, char *argv[])
     MAX_LBA_VARS
     POLL_VAR
     SHOW_FORMAT_STATUS_LOG_VAR
-    SHOW_SUPPORTED_PROTECTION_TYPES_VAR
-    SHOW_SUPPORTED_SECTOR_SIZES_VAR
+    SHOW_SUPPORTED_FORMATS_VAR
     SET_SECTOR_SIZE_VARS
+
+#if !defined (DISABLE_NVME_PASSTHROUGH)
+    NVM_FORMAT_VARS
+    NVM_FORMAT_OPTION_VARS
+#endif
 
 #if defined (ENABLE_CSMI)
     CSMI_FORCE_VARS
@@ -117,7 +119,7 @@ int32_t main(int argc, char *argv[])
         SAT_INFO_LONG_OPT,
         USB_CHILD_INFO_LONG_OPT,
         SCAN_LONG_OPT,
-		AGRESSIVE_SCAN_LONG_OPT,
+        AGRESSIVE_SCAN_LONG_OPT,
         SCAN_FLAGS_LONG_OPT,
         VERSION_LONG_OPT,
         VERBOSE_LONG_OPT,
@@ -147,9 +149,12 @@ int32_t main(int argc, char *argv[])
         PATTERN_LONG_OPT,
         FORMAT_UNIT_ADDITIONAL_OPTIONS,
         SHOW_FORMAT_STATUS_LOG_LONG_OPT,
-        SHOW_SUPPORTED_PROTECTION_TYPES_LONG_OPT,
         SET_SECTOR_SIZE_LONG_OPT,
-        SHOW_SUPPORTED_SECTOR_SIZES_LONG_OPT,
+        SHOW_SUPPORTED_FORMATS_LONG_OPT,
+#if !defined (DISABLE_NVME_PASSTHROUGH)
+        NVM_FORMAT_LONG_OPT,
+        NVM_FORMAT_OPTIONS_LONG_OPTS,
+#endif
         LONG_OPT_TERMINATOR
     };
 
@@ -183,10 +188,6 @@ int32_t main(int argc, char *argv[])
                 if (strlen(optarg) == strlen(DATA_ERASE_ACCEPT_STRING) && strncmp(optarg, DATA_ERASE_ACCEPT_STRING, strlen(DATA_ERASE_ACCEPT_STRING)) == 0)
                 {
                     DATA_ERASE_FLAG = true;
-                }
-                else if (strlen(optarg) == strlen(PARTIAL_DATA_ERASE_ACCEPT_STRING) && strncmp(optarg, PARTIAL_DATA_ERASE_ACCEPT_STRING, strlen(PARTIAL_DATA_ERASE_ACCEPT_STRING)) == 0)
-                {
-                    PARTIAL_DATA_ERASE_FLAG = true;
                 }
                 else
                 {
@@ -262,10 +263,97 @@ int32_t main(int argc, char *argv[])
                 FORMAT_UNIT_PROTECTION_INTERVAL_EXPONENT = (uint8_t)atoi(optarg);
                 FORMAT_UNIT_PROECTION_INTERVAL_EXPONENT_FROM_USER = true;
             }
-			else if (strcmp(longopts[optionIndex].name, FORMAT_UNIT_NEW_MAX_LBA_LONG_OPT_STRING) == 0)
-			{
-				FORMAT_UNIT_NEW_MAX_LBA = (uint64_t)atoll(optarg);
-			}
+            else if (strcmp(longopts[optionIndex].name, FORMAT_UNIT_NEW_MAX_LBA_LONG_OPT_STRING) == 0)
+            {
+                FORMAT_UNIT_NEW_MAX_LBA = (uint64_t)atoll(optarg);
+            }
+#if !defined (DISABLE_NVME_PASSTHROUGH)
+            else if (strcmp(longopts[optionIndex].name, NVM_FORMAT_LONG_OPT_STRING) == 0)
+            {
+                NVM_FORMAT_FLAG = true;
+                if (strcmp(optarg, "current") != 0)
+                {
+                    //set the sector size
+                    NVM_FORMAT_SECTOR_SIZE_OR_FORMAT_NUM = (uint32_t)atoi(optarg);
+                }
+            }
+            else if (strcmp(longopts[optionIndex].name, NVM_FORMAT_NSID_LONG_OPT_STRING) == 0)
+            {
+                if (strcmp(optarg, "current") == 0)
+                {
+                    NVM_FORMAT_NSID = 0;//detect this below and insert the correct NSID for the current handle
+                }
+                else if (strcmp(optarg, "all") == 0)
+                {
+                    NVM_FORMAT_NSID = UINT32_MAX;
+                }
+                else
+                {
+                    print_Error_In_Cmd_Line_Args(NVM_FORMAT_NSID_LONG_OPT_STRING, optarg);
+                    exit(UTIL_EXIT_ERROR_IN_COMMAND_LINE);
+                }
+            }
+            else if (strcmp(longopts[optionIndex].name, NVM_FORMAT_SECURE_ERASE_LONG_OPT_STRING) == 0)
+            {
+                if (strcmp(optarg, "none") == 0)
+                {
+                    NVM_FORMAT_SECURE_ERASE = NVM_FMT_SE_NO_SECURE_ERASE_REQUESTED;
+                }
+                else if (strcmp(optarg, "user") == 0)
+                {
+                    NVM_FORMAT_SECURE_ERASE = NVM_FMT_SE_USER_DATA;
+                }
+                else if (strcmp(optarg, "crypto") == 0)
+                {
+                    NVM_FORMAT_SECURE_ERASE = NVM_FMT_SE_NO_SECURE_ERASE_REQUESTED;
+                }
+                else
+                {
+                    print_Error_In_Cmd_Line_Args(NVM_FORMAT_SECURE_ERASE_LONG_OPT_STRING, optarg);
+                    exit(UTIL_EXIT_ERROR_IN_COMMAND_LINE);
+                }
+            }
+            else if (strcmp(longopts[optionIndex].name, NVM_FORMAT_PI_TYPE_LONG_OPT_STRING) == 0)
+            {
+                NVM_FORMAT_PI_TYPE = (uint8_t)atoi(optarg);
+            }
+            else if (strcmp(longopts[optionIndex].name, NVM_FORMAT_PI_LOCATION_LONG_OPT_STRING) == 0)
+            {
+                if (strcmp(optarg, "beginning") == 0)
+                {
+                    NVM_FORMAT_PI_LOCATION = 0;
+                }
+                else if (strcmp(optarg, "end") == 0)
+                {
+                    NVM_FORMAT_PI_LOCATION = 1;
+                }
+                else
+                {
+                    print_Error_In_Cmd_Line_Args(NVM_FORMAT_PI_LOCATION_LONG_OPT_STRING, optarg);
+                    exit(UTIL_EXIT_ERROR_IN_COMMAND_LINE);
+                }
+            }
+            else if (strcmp(longopts[optionIndex].name, NVM_FORMAT_METADATA_SIZE_LONG_OPT_STRING) == 0)
+            {
+                NVM_FORMAT_METADATA_SIZE = (uint32_t)atoi(optarg);
+            }
+            else if (strcmp(longopts[optionIndex].name, NVM_FORMAT_METADATA_SETTING_LONG_OPT_STRING) == 0)
+            {
+                if (strcmp(optarg, "xlba") == 0)
+                {
+                    NVM_FORMAT_METADATA_SETTING = 0;
+                }
+                else if (strcmp(optarg, "separate") == 0)
+                {
+                    NVM_FORMAT_METADATA_SETTING = 1;
+                }
+                else
+                {
+                    print_Error_In_Cmd_Line_Args(NVM_FORMAT_METADATA_SETTING_LONG_OPT_STRING, optarg);
+                    exit(UTIL_EXIT_ERROR_IN_COMMAND_LINE);
+                }
+            }
+#endif
             else if (strcmp(longopts[optionIndex].name, PATTERN_LONG_OPT_STRING) == 0)
             {
                 PATTERN_FLAG = true;
@@ -454,13 +542,13 @@ int32_t main(int argc, char *argv[])
         print_EULA_To_Screen(false, false);
     }
 
-	if (SCAN_FLAG || AGRESSIVE_SCAN_FLAG)
+    if (SCAN_FLAG || AGRESSIVE_SCAN_FLAG)
     {
         unsigned int scanControl = DEFAULT_SCAN;
-		if(AGRESSIVE_SCAN_FLAG)
-		{
-			scanControl |= AGRESSIVE_SCAN;
-		}
+        if(AGRESSIVE_SCAN_FLAG)
+        {
+            scanControl |= AGRESSIVE_SCAN;
+        }
 #if defined (__linux__)
         if (scanSD)
         {
@@ -527,12 +615,12 @@ int32_t main(int argc, char *argv[])
         {
             scanControl |= SCAN_SEAGATE_ONLY;
         }
-        scan_And_Print_Devs(scanControl, NULL);
+        scan_And_Print_Devs(scanControl, NULL, toolVerbosity);
     }
     // Add to this if list anything that is suppose to be independent.
     // e.g. you can't say enumerate & then pull logs in the same command line.
     // SIMPLE IS BEAUTIFUL
-	if (SCAN_FLAG || AGRESSIVE_SCAN_FLAG || SHOW_BANNER_FLAG || LICENSE_FLAG || SHOW_HELP_FLAG)
+    if (SCAN_FLAG || AGRESSIVE_SCAN_FLAG || SHOW_BANNER_FLAG || LICENSE_FLAG || SHOW_HELP_FLAG)
     {
         free_Handle_List(&HANDLE_LIST, DEVICE_LIST_COUNT);
         exit(UTIL_EXIT_NO_ERROR);
@@ -597,9 +685,11 @@ int32_t main(int argc, char *argv[])
         || DISPLAY_LBA_FLAG
         || (PROGRESS_CHAR != NULL)
         || SHOW_FORMAT_STATUS_LOG_FLAG
-        || SHOW_SUPPORTED_PROTECTION_TYPES_FLAG
         || SET_SECTOR_SIZE_FLAG
-        || SHOW_SUPPORTED_SECTOR_SIZES_FLAG
+        || SHOW_SUPPORTED_FORMATS_FLAG
+#if !defined (DISABLE_NVME_PASSTHROUGH)
+        || NVM_FORMAT_FLAG
+#endif
         ))
     {
         utility_Usage(true);
@@ -721,9 +811,9 @@ int32_t main(int argc, char *argv[])
             ret = get_Device(HANDLE_LIST[handleIter], &deviceList[handleIter]);
 #if !defined(_WIN32)
 #if !defined(VMK_CROSS_COMP)
-            if ((deviceList[handleIter].os_info.fd < 0) || 
+            if ((deviceList[handleIter].os_info.fd < 0) ||
 #else
-            if (((deviceList[handleIter].os_info.fd < 0) && 
+            if (((deviceList[handleIter].os_info.fd < 0) &&
                  (deviceList[handleIter].os_info.nvmeFd == NULL)) ||
 #endif
             (ret == FAILURE || ret == PERMISSION_DENIED))
@@ -765,14 +855,14 @@ int32_t main(int argc, char *argv[])
         //check for model number match
         if (MODEL_MATCH_FLAG)
         {
-			if (strstr(deviceList[deviceIter].drive_info.product_identification, MODEL_STRING_FLAG) == NULL)
-			{
-				if (VERBOSITY_QUIET < toolVerbosity)
-				{
-					printf("%s - This drive (%s) does not match the input model number: %s\n", deviceList[deviceIter].os_info.name, deviceList[deviceIter].drive_info.product_identification, MODEL_STRING_FLAG);
-				}
-				continue;
-			}
+            if (strstr(deviceList[deviceIter].drive_info.product_identification, MODEL_STRING_FLAG) == NULL)
+            {
+                if (VERBOSITY_QUIET < toolVerbosity)
+                {
+                    printf("%s - This drive (%s) does not match the input model number: %s\n", deviceList[deviceIter].os_info.name, deviceList[deviceIter].drive_info.product_identification, MODEL_STRING_FLAG);
+                }
+                continue;
+            }
         }
         //check for fw match
         if (FW_MATCH_FLAG)
@@ -790,14 +880,14 @@ int32_t main(int argc, char *argv[])
         //check for child model number match
         if (CHILD_MODEL_MATCH_FLAG)
         {
-			if (strlen(deviceList[deviceIter].drive_info.bridge_info.childDriveMN) == 0 || strstr(deviceList[deviceIter].drive_info.bridge_info.childDriveMN, CHILD_MODEL_STRING_FLAG) == NULL)
-			{
-				if (VERBOSITY_QUIET < toolVerbosity)
-				{
-					printf("%s - This drive (%s) does not match the input child model number: %s\n", deviceList[deviceIter].os_info.name, deviceList[deviceIter].drive_info.bridge_info.childDriveMN, CHILD_MODEL_STRING_FLAG);
-				}
-				continue;
-			}
+            if (strlen(deviceList[deviceIter].drive_info.bridge_info.childDriveMN) == 0 || strstr(deviceList[deviceIter].drive_info.bridge_info.childDriveMN, CHILD_MODEL_STRING_FLAG) == NULL)
+            {
+                if (VERBOSITY_QUIET < toolVerbosity)
+                {
+                    printf("%s - This drive (%s) does not match the input child model number: %s\n", deviceList[deviceIter].os_info.name, deviceList[deviceIter].drive_info.bridge_info.childDriveMN, CHILD_MODEL_STRING_FLAG);
+                }
+                continue;
+            }
         }
         //check for child fw match
         if (CHILD_FW_MATCH_FLAG)
@@ -914,49 +1004,44 @@ int32_t main(int argc, char *argv[])
             safe_Free(displaySector);
         }
 
-        //Show supported protection types
-        if (SHOW_SUPPORTED_PROTECTION_TYPES_FLAG)
+        if (SHOW_SUPPORTED_FORMATS_FLAG)
         {
-            protectionSupport supportedProtectionTypes;
-            memset(&supportedProtectionTypes, 0, sizeof(protectionSupport));
-            switch (get_Supported_Protection_Types(&deviceList[deviceIter], &supportedProtectionTypes))
+            uint32_t numberOfSectorSizes = get_Number_Of_Supported_Sector_Sizes(&deviceList[deviceIter]);
+            uint32_t memSize = sizeof(supportedFormats) + sizeof(sectorSize) * numberOfSectorSizes;
+            ptrSupportedFormats formats = (ptrSupportedFormats)malloc(memSize);
+            if (formats)
             {
-            case SUCCESS:
-                show_Supported_Protection_Types(&supportedProtectionTypes);
-                break;
-            case NOT_SUPPORTED:
-                if (VERBOSITY_QUIET < toolVerbosity)
+                memset(formats, 0, memSize);
+                formats->numberOfSectorSizes = numberOfSectorSizes;
+                switch (get_Supported_Formats(&deviceList[deviceIter], formats))
                 {
-                    printf("Protection types are not supported on this drive\n");
+                case SUCCESS:
+                    show_Supported_Formats(formats);
+                    break;
+                case NOT_SUPPORTED:
+                    if (VERBOSITY_QUIET < toolVerbosity)
+                    {
+                        printf("Device does not support showing supported formats\n");
+                    }
+                    exitCode = UTIL_EXIT_OPERATION_NOT_SUPPORTED;
+                    break;
+                default:
+                    if (VERBOSITY_QUIET < toolVerbosity)
+                    {
+                        printf("Failed to get supported sector sizes from device!\n");
+                    }
+                    exitCode = UTIL_EXIT_OPERATION_FAILURE;
+                    break;
                 }
-                exitCode = UTIL_EXIT_OPERATION_NOT_SUPPORTED;
-                break;
-            default:
-                if (VERBOSITY_QUIET < toolVerbosity)
-                {
-                    printf("Failed to read supported protection types\n");
-                }
-                exitCode = UTIL_EXIT_OPERATION_FAILURE;
-                break;
+                safe_Free(formats);
             }
-        }
-        //show supported sector sizes and protection types VPD page
-        if (SHOW_SUPPORTED_SECTOR_SIZES_FLAG)
-        {
-            switch (show_Supported_Sector_Sizes(&deviceList[deviceIter]))
+            else
             {
-            case SUCCESS:
-                break;
-            case NOT_SUPPORTED:
-                exitCode = UTIL_EXIT_OPERATION_NOT_SUPPORTED;
-                break;
-            default:
                 if (VERBOSITY_QUIET < toolVerbosity)
                 {
-                    printf("Failed to get supported sector sizes from device!\n");
+                    printf("Unable to allocate memory for supported formats\n");
                 }
                 exitCode = UTIL_EXIT_OPERATION_FAILURE;
-                break;
             }
         }
 
@@ -1005,7 +1090,7 @@ int32_t main(int argc, char *argv[])
                 formatUnitParameters.formatType = FAST_FORMAT_FLAG;
                 formatUnitParameters.currentBlockSize = currentBlockSize;
                 formatUnitParameters.newBlockSize = FORMAT_SECTOR_SIZE;
-				formatUnitParameters.newMaxLBA = FORMAT_UNIT_NEW_MAX_LBA;//if zero, this is ignored
+                formatUnitParameters.newMaxLBA = FORMAT_UNIT_NEW_MAX_LBA;//if zero, this is ignored
                 formatUnitParameters.gList = NULL;
                 formatUnitParameters.glistSize = 0;
                 formatUnitParameters.completeList = FORMAT_UNIT_DISCARD_GROWN_DEFECT_LIST_FLAG;
@@ -1026,11 +1111,11 @@ int32_t main(int argc, char *argv[])
                 //formatUnitParameters.defaultFormat = FORMAT_UNIT_DEFAULT_FORMAT;//change to true when a user wants a default format...This is basically obsolete now due to the above code, but left in place in case someone wants to try some weird bit combinations
                 formatUnitParameters.disableImmediate = FORMAT_UNIT_DISABLE_IMMEDIATE_RESPONSE;
                 //Set the same protection information as we discovered first.
-                formatUnitParameters.protectionType = deviceList[deviceIter].drive_info.currentProtectionType;
-                formatUnitParameters.protectionIntervalExponent = deviceList[deviceIter].drive_info.piExponent;
+                formatUnitParameters.changeProtectionType = false;
                 //override protection info if we were asked to.
                 if (FORMAT_UNIT_PROECTION_TYPE_FROM_USER)
                 {
+                    formatUnitParameters.changeProtectionType = true;
                     formatUnitParameters.protectionType = FORMAT_UNIT_PROTECTION_TYPE;
                     if (formatUnitParameters.protectionType < 2)
                     {
@@ -1139,7 +1224,138 @@ int32_t main(int argc, char *argv[])
                 }
             }
         }
-        
+
+#if !defined (DISABLE_NVME_PASSTHROUGH)
+        if (NVM_FORMAT_FLAG)
+        {
+            if (VERBOSITY_QUIET < toolVerbosity)
+            {
+                printf("NVM Format\n");
+            }
+            if (DATA_ERASE_FLAG)
+            {
+                runNVMFormatParameters nvmformatParameters;
+                memset(&nvmformatParameters, 0, sizeof(runNVMFormatParameters));
+                if (NVM_FORMAT_SECTOR_SIZE_OR_FORMAT_NUM >=16 && NVM_FORMAT_SECTOR_SIZE_OR_FORMAT_NUM <= 512)
+                {
+                    nvmformatParameters.formatNumberProvided = false;
+                    nvmformatParameters.newSize.currentBlockSize = true;
+                }
+                else if (NVM_FORMAT_SECTOR_SIZE_OR_FORMAT_NUM >= 0 && NVM_FORMAT_SECTOR_SIZE_OR_FORMAT_NUM < 16)
+                {
+                    nvmformatParameters.formatNumberProvided = true;
+                    nvmformatParameters.formatNumber = NVM_FORMAT_SECTOR_SIZE_OR_FORMAT_NUM;
+                }
+                else
+                {
+                    nvmformatParameters.formatNumberProvided = false;
+                    nvmformatParameters.newSize.currentBlockSize = false;
+                    nvmformatParameters.newSize.newBlockSize = NVM_FORMAT_SECTOR_SIZE_OR_FORMAT_NUM;
+                }
+                if (NVM_FORMAT_METADATA_SIZE != UINT32_MAX && !nvmformatParameters.formatNumberProvided)
+                {
+                    nvmformatParameters.newSize.changeMetadataSize = true;
+                    nvmformatParameters.newSize.metadataSize = (uint16_t)NVM_FORMAT_METADATA_SIZE;
+                }
+                if (NVM_FORMAT_NSID != UINT32_MAX)
+                {
+                    nvmformatParameters.currentNamespace = true;
+                }
+                nvmformatParameters.secureEraseSettings = NVM_FORMAT_SECURE_ERASE;
+                //PI
+                switch (NVM_FORMAT_PI_TYPE)
+                {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                    nvmformatParameters.changeProtectionType = true;
+                    nvmformatParameters.protectionType = NVM_FORMAT_PI_TYPE;
+                    break;
+                default:
+                    break;
+                }
+                //PIL
+                switch (NVM_FORMAT_PI_LOCATION)
+                {
+                case 0:
+                    nvmformatParameters.protectionLocation.valid = true;
+                    nvmformatParameters.protectionLocation.first8Bytes = true;
+                    break;
+                case 1:
+                    nvmformatParameters.protectionLocation.valid = true;
+                    nvmformatParameters.protectionLocation.first8Bytes = false;
+                    break;
+                default:
+                    break;
+                }
+                //metadata settings
+                switch (NVM_FORMAT_METADATA_SETTING)
+                {
+                case 0:
+                    nvmformatParameters.metadataSettings.valid = true;
+                    nvmformatParameters.metadataSettings.metadataAsExtendedLBA = true;
+                    break;
+                case 1:
+                    nvmformatParameters.metadataSettings.valid = true;
+                    nvmformatParameters.metadataSettings.metadataAsExtendedLBA = false;
+                    break;
+                default:
+                    break;
+                }
+                int formatRet = run_NVMe_Format(&deviceList[deviceIter], nvmformatParameters, POLL_FLAG);
+                switch (formatRet)
+                {
+                case SUCCESS:
+                    if (VERBOSITY_QUIET < toolVerbosity)
+                    {
+                        if (POLL_FLAG)
+                        {
+                            printf("NVM Format was Successful!\n");
+                        }
+                        else
+                        {
+                            printf("NVM Format was started Successfully!\n");
+                            printf("Use --%s nvmformat to check for progress.\n", PROGRESS_LONG_OPT_STRING);
+                        }
+                    }
+                    break;
+                case NOT_SUPPORTED:
+                    if (VERBOSITY_QUIET < toolVerbosity)
+                    {
+                        printf("NVM Format Not Supported or invalid option combination provided!\n");
+                    }
+                    exitCode = UTIL_EXIT_OPERATION_NOT_SUPPORTED;
+                    break;
+                case OS_COMMAND_NOT_AVAILABLE:
+                    if (VERBOSITY_QUIET < toolVerbosity)
+                    {
+                        printf("NVM Format is not supported in this OS\n");
+                    }
+                    exitCode = UTIL_EXIT_OPERATION_NOT_SUPPORTED;
+                    break;
+                default:
+                    if (VERBOSITY_QUIET < toolVerbosity)
+                    {
+                        printf("NVM Format Failed!\n");
+                    }
+                    exitCode = UTIL_EXIT_OPERATION_FAILURE;
+                    break;
+                }
+            }
+            else
+            {
+                if (VERBOSITY_QUIET < toolVerbosity)
+                {
+                    printf("\n");
+                    printf("You must add the flag:\n\"%s\" \n", DATA_ERASE_ACCEPT_STRING);
+                    printf("to the command line arguments to run a nvm format.\n\n");
+                    printf("e.g.: %s -d %s --%s current --confirm %s\n\n", util_name, deviceHandleExample, NVM_FORMAT_LONG_OPT_STRING, DATA_ERASE_ACCEPT_STRING);
+                }
+            }
+        }
+#endif
+
         if (PROGRESS_CHAR != NULL)
         {
             int result = UNKNOWN;
@@ -1154,6 +1370,16 @@ int32_t main(int argc, char *argv[])
                 }
                 result = show_Format_Unit_Progress(&deviceList[deviceIter]);
             }
+#if !defined (DISABLE_NVME_PASSTHROUGH)
+            else if (strcmp(progressTest, "NVMFORMAT") == 0)
+            {
+                if (VERBOSITY_QUIET < toolVerbosity)
+                {
+                    printf("Getting NVM Format Progress.\n");
+                }
+                result = show_Format_Unit_Progress(&deviceList[deviceIter]);
+            }
+#endif
             else
             {
                 if (VERBOSITY_QUIET < toolVerbosity)
@@ -1249,37 +1475,46 @@ void utility_Usage(bool shortUsage)
     print_Poll_Help(shortUsage);
     print_Progress_Help(shortUsage, "format");
     print_Scan_Help(shortUsage, deviceHandleExample);
-	print_Agressive_Scan_Help(shortUsage);
+    print_Agressive_Scan_Help(shortUsage);
     print_SAT_Info_Help(shortUsage);
     print_Test_Unit_Ready_Help(shortUsage);
     //utility tests/operations go here - alphabetized
     //multiple interfaces
-    print_Show_Supported_Sector_Sizes_Help(shortUsage);
+    print_Show_Supported_Formats_Help(shortUsage);
     //SATA Only Options
     //printf("\n\tSATA Only:\n\n");
 
     //SAS Only Options
     printf("\n\tSAS Only:\n\t=========\n");
     print_Show_Format_Status_Log_Help(shortUsage);
-    print_Show_Protection_Types_Supported_Help(shortUsage);
 
     //data destructive commands - alphabetized
     printf("\nData Destructive Commands\n");
     printf("=========================\n");
     //utility data destructive tests/operations go here
     print_Pattern_Help(shortUsage);
-	print_Set_Sector_Size_Help(shortUsage);
+    print_Set_Sector_Size_Help(shortUsage);
     printf("\n\tSAS Only:\n\t=========\n");
     //print_Format_Default_Format_Help(shortUsage);
     print_Format_Disable_Certification_Help(shortUsage);
     print_Format_Disable_Primary_List_Help(shortUsage);
     print_Format_Discard_Grown_Defect_List_Help(shortUsage);
     print_Format_Disable_Immediate_Response_Help(shortUsage);
-	print_Format_New_Max_LBA_Help(shortUsage);
+    print_Format_New_Max_LBA_Help(shortUsage);
     print_Format_Protection_Interval_Exponent_Help(shortUsage);
     print_Format_Protection_Type_Help(shortUsage);
     print_Fast_Format_Help(shortUsage);
     print_Format_Unit_Help(shortUsage);
     print_Format_Security_Initialize_Help(shortUsage);
     print_Format_Stop_On_List_Error_Help(shortUsage);
+#if !defined (DISABLE_NVME_PASSTHROUGH)
+    printf("\n\tNVMe Only:\n\t=========\n");
+    print_NVM_Format_Metadata_Setting_Help(shortUsage);
+    print_NVM_Format_Metadata_Size_Help(shortUsage);
+    print_NVM_Format_NSID_Help(shortUsage);
+    print_NVM_Format_PI_Type_Help(shortUsage);
+    print_NVM_Format_PIL_Help(shortUsage);
+    print_NVM_Format_Secure_Erase_Help(shortUsage);
+    print_NVM_Format_Help(shortUsage);
+#endif
 }
