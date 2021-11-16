@@ -15,9 +15,11 @@
 name: release
 
 on:
-  release:
-    types:
-      - 'created'
+  push:
+    branches:
+      - develop
+    tags:
+      - 'Release-**'
 
 jobs:
   ndm-build-base:
@@ -35,9 +37,7 @@ jobs:
           echo "IMAGE_ORG=${IMAGE_ORG}" >> $GITHUB_ENV
 
       - name: Set Release Tag
-        run: |
-          TAG="${GITHUB_REF#refs/*/v}"
-          echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
+        run: echo "RELEASE_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
 
       - name: Set Build Date
         id: date
