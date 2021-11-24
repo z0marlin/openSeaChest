@@ -20,6 +20,8 @@ on:
       - develop
     tags:
       - 'Release-**'
+    paths:
+      - 'build/ndm-build-base/**'
 
 jobs:
   ndm-build-base:
@@ -27,8 +29,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v1
-        with:
-          submodule: 'recursive'
 
       - name: Set Image Org
         # sets the default IMAGE_ORG to openebs

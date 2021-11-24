@@ -20,6 +20,8 @@ on:
       # on pull requests to develop and release branches
       - develop
       - 'v*'
+    paths:
+      - 'build/ndm-build-base/**'
 
 jobs:
   ndm-build-base:
@@ -27,8 +29,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          submodule: 'recursive'
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
