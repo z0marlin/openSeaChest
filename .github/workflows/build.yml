@@ -40,7 +40,6 @@ jobs:
         id: date
         run: |
           echo "::set-output name=timestamp::$(date -u +'%Y-%m-%dT%H:%M:%S%Z')"
-          echo "::set-output name=date::$(date -u +'%Y%m%d')"
 
       - name: Docker meta
         id: docker_meta
@@ -53,7 +52,7 @@ jobs:
             latest=true
           tags: |
             type=sha
-            type=raw,value=${{ steps.date.outputs.date }}
+            type=raw,value={{date 'YYYYMMDD'}}
 
       - name: Print Tags
         run: |
