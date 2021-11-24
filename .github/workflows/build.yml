@@ -39,7 +39,7 @@ jobs:
       - name: Set Build Date
         id: date
         run: |
-          echo "::set-output name=timestamp::$(date -u +'%Y-%m-%dT%H:%M:%S%Z')"
+          echo "::set-output name=DATE::$(date -u +'%Y-%m-%dT%H:%M:%S%Z')"
 
       - name: Docker meta
         id: docker_meta
