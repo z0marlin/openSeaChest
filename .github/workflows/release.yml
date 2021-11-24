@@ -36,9 +36,6 @@ jobs:
           [ -z "${{ secrets.IMAGE_ORG }}" ] && IMAGE_ORG=openebs || IMAGE_ORG=${{ secrets.IMAGE_ORG}}
           echo "IMAGE_ORG=${IMAGE_ORG}" >> $GITHUB_ENV
 
-      - name: Set Release Tag
-        run: echo "RELEASE_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
-
       - name: Set Build Date
         id: date
         run: |
@@ -46,19 +43,19 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
+        uses: docker/metadata-action@v3
         with:
           # add each registry to which the image needs to be pushed here
           images: |
             ghcr.io/${{ env.IMAGE_ORG }}/ndm-build-base
-          tag-latest: true
-          tag-semver: |
-            {{version}}
+          flavor: |
+            latest=true
+          tags: |
+            type=sha
 
       - name: Print Tags
         run: |
           echo "${{ steps.docker_meta.outputs.tags }}"
-          echo "RELEASE TAG: ${RELEASE_TAG}"
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v1
