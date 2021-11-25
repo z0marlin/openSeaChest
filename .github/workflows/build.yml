@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: release
+name: build
 
 on:
   push:
@@ -96,6 +96,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Set Image Org 
+        # sets the default IMAGE_ORG to openebs
+        run: |
+          [ -z "${{ secrets.IMAGE_ORG }}" ] && IMAGE_ORG=openebs || IMAGE_ORG=${{ secrets.IMAGE_ORG}}
+          echo "IMAGE_ORG=${IMAGE_ORG}" >> $GITHUB_ENV
         
       - name: Set Release Tag
         run: |
