@@ -52,7 +52,7 @@ jobs:
             openebs/ndm-build-base:ci
         
       - name: Run Trivy vulnerability scanner
-        uses: aquase--recursivecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'openebs/ndm-build-base:ci'
           format: 'table'
